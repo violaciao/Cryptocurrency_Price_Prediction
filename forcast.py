@@ -18,7 +18,10 @@ class CryptoForcaster:
         ):
         self.ticker = ticker
         self.start_date = start_date
-        self.company_name = yf.Ticker(ticker).get_info()['name']
+        try:
+            self.company_name = yf.Ticker(ticker).get_info()['name']
+        except:
+            self.company_name = yf.Ticker(ticker).get_info()['longName']
         self.crypto_hist_df = self.get_crypto_hist_df()
         self.crypto_multiplicative = self.get_crypto_multiplicative()
         self.crypto_forcast = self.get_crypto_forcast()
