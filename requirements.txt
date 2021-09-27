@@ -3,3 +3,4 @@ plotly
 pystan~=2.14
 yfinance
 fbprophet
+streamlit
