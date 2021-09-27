@@ -20,11 +20,19 @@ class CryptoForcaster:
         self.start_date = start_date
         try:
             self.company_name = yf.Ticker(ticker).get_info()['name']
+            self.is_crypto = True
         except:
             self.company_name = yf.Ticker(ticker).get_info()['longName']
+            self.is_crypto = False
         self.crypto_hist_df = self.get_crypto_hist_df()
-        self.crypto_multiplicative = self.get_crypto_multiplicative()
+        self.model = self.fit_model()
         self.crypto_forcast = self.get_crypto_forcast()
+
+
+    def run(self):
+        # self.plot_open_prices()
+        self.plot_forcast()
+        # self.plot_components()
 
 
     def get_crypto_hist_df(self):
@@ -74,11 +82,15 @@ class CryptoForcaster:
 
         fig.show()
 
-    def get_crypto_multiplicative(self):
+    def fit_model(self):
 
-        m = Prophet(
-                seasonality_mode="multiplicative" 
-            )
+        if self.is_crypto:
+            m = Prophet(
+                    seasonality_mode="multiplicative" 
+                )
+        else:
+            m = Prophet()
+
         m.fit(self.crypto_hist_df)
 
         return m
@@ -86,16 +98,21 @@ class CryptoForcaster:
 
     def get_crypto_forcast(self, prediction_periods: int = 365):
 
-        future = self.crypto_multiplicative.make_future_dataframe(periods = prediction_periods)
+        future = self.model.make_future_dataframe(periods = prediction_periods)
 
-        return self.crypto_multiplicative.predict(future)
+        return self.model.predict(future)
         
 
     def plot_forcast(self):
-        fig = plot_plotly(self.crypto_multiplicative, self.crypto_forcast)
+        fig = plot_plotly(
+            self.model, 
+            self.crypto_forcast, 
+            xlabel="Prediction Window",
+            ylabel=f"{self.company_name} Price ($)"
+            )
         fig.show()
 
 
     def plot_components(self):
-        fig = plot_components_plotly(self.crypto_multiplicative, self.crypto_forcast)
+        fig = plot_components_plotly(self.model, self.crypto_forcast)
         fig.show()
