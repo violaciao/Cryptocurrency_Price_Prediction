@@ -98,8 +98,16 @@ class CryptoForcaster:
 
     def get_crypto_forcast(self, prediction_periods: int = 365):
 
-        future = self.model.make_future_dataframe(periods = prediction_periods)
-
+        if self.is_crypto:
+            future = self.model.make_future_dataframe(
+                periods = prediction_periods
+                )
+        else:
+            future = self.model.make_future_dataframe(
+                periods = prediction_periods, 
+                freq='B'  # forecasting only business days
+                )
+    
         return self.model.predict(future)
         
 
