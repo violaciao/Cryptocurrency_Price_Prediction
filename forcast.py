@@ -32,11 +32,24 @@ class CryptoForcaster:
     def run(self):
         # self.plot_open_prices()
         self.plot_forcast()
-        # self.plot_components()
+        self.plot_components()
 
 
     def get_crypto_hist_df(self):
-        df = yf.download(self.ticker, self.start_date, self.today).reset_index()
+        df = yf.download(
+            tickers=self.ticker,
+            start=self.start_date,
+            end=self.today,
+            # period = "ytd",
+            interval="1h",
+            group_by="ticker",
+            auto_adjust=True,
+            prepost=True,
+            threads=True,
+            proxy=None,
+        )
+
+        df['Date'] = df.index.tz_convert('US/Eastern').tz_localize(None)
 
         new_names = {
             "Date": "ds", 
@@ -67,8 +80,10 @@ class CryptoForcaster:
                 rangeselector=dict(
                     buttons=list(
                         [
+                            dict(count=1, label="1d", step="day", stepmode="backward"),
+                            dict(count=7, label="1w", step="day", stepmode="backward"),
                             dict(count=1, label="1m", step="month", stepmode="backward"),
-                            dict(count=6, label="6m", step="month", stepmode="backward"),
+                            # dict(count=6, label="6m", step="month", stepmode="backward"),
                             dict(count=1, label="YTD", step="year", stepmode="todate"),
                             dict(count=1, label="1y", step="year", stepmode="backward"),
                             dict(step="all"),
@@ -86,17 +101,20 @@ class CryptoForcaster:
 
         if self.is_crypto:
             m = Prophet(
-                    seasonality_mode="multiplicative" 
+                    seasonality_mode="multiplicative",
+                    mcmc_samples=50
                 )
         else:
             m = Prophet()
+
+        m.add_country_holidays(country_name='US')
 
         m.fit(self.crypto_hist_df)
 
         return m
 
 
-    def get_crypto_forcast(self, prediction_periods: int = 365):
+    def get_crypto_forcast(self, prediction_periods: int = 48):
 
         if self.is_crypto:
             future = self.model.make_future_dataframe(
@@ -105,7 +123,7 @@ class CryptoForcaster:
         else:
             future = self.model.make_future_dataframe(
                 periods = prediction_periods, 
-                freq='B'  # forecasting only business days
+                freq='H'  # hour: 'H'; day: 'D'; only business days: 'B'
                 )
     
         return self.model.predict(future)
@@ -124,3 +142,8 @@ class CryptoForcaster:
     def plot_components(self):
         fig = plot_components_plotly(self.model, self.crypto_forcast)
         fig.show()
+
+
+if __name__ == '__main__':
+    crypto = CryptoForcaster('ETH-USD', '2021-01-01')
+    crypto.run()
